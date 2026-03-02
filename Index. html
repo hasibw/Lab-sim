@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آزمایشگاه علمی پیشرفته | Advanced Science Lab</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #6366f1;
+            --secondary: #ec4899;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+        
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--light);
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            height: 100vh;
+            gap: 2px;
+            background: #0f172a;
+        }
+        
+        /* Sidebar - Inventory */
+        .sidebar {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            font-weight: 900;
+            font-size: 1.3em;
+            text-align: center;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .search-box {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.8);
+            color: white;
+            font-family: inherit;
+            font-size: 0.95em;
+        }
+        
+        .categories {
+            display: flex;
+            gap: 5px;
+            padding: 10px;
+            overflow-x: auto;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .category-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background: rgba(99, 102, 241, 0.2);
+            color: white;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+            font-size: 0.85em;
+        }
+        
+        .category-btn:hover, .category-btn.active {
+            background: var(--primary);
+            transform: scale(1.05);
+        }
+        
+        .items-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .item-card {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid transparent;
+            border-radius: 16px;
+            padding: 15px;
+            cursor: grab;
+            transition: all 0.3s;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .item-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .item-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .item-icon {
+            font-size: 2.5em;
+            margin-bottom: 8px;
+        }
+        
+        .item-name {
+            font-weight: 700;
+            font-size: 0.9em;
+            margin-bottom: 4px;
+        }
+        
+        .item-formula {
+            font-size: 0.75em;
+            opacity: 0.7;
+            font-family: monospace;
+        }
+        
+        .item-props {
+            font-size: 0.7em;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .prop-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        /* Main Lab Area */
+        .main-area {
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .lab-table {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: 
+                linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.02) 50%, transparent 52%),
+                linear-gradient(-45deg, transparent 48%, rgba(255,255,255,0.02) 50%, transparent 52%);
+            background-size: 60px 60px;
+        }
+        
+        .workspace {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            height: 90%;
+            border: 3px dashed rgba(99, 102, 241, 0.3);
+            border-radius: 30px;
+            background: rgba(15, 23, 42, 0.3);
+        }
+        
+        .dropped-item {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+            transition: transform 0.1s;
+            z-index: 10;
+        }
+        
+        .dropped-item:hover {
+            z-index: 100;
+        }
+        
+        .dropped-item.selected {
+            filter: drop-shadow(0 0 15px var(--primary));
+            z-index: 50;
+        }
+        
+        .equipment-container {
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.1);
+            border: 3px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+        
+        .equipment-container.beaker {
+            border-color: var(--accent);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .equipment-container.flask {
+            border-color: var(--secondary);
+            background: rgba(236, 72, 153, 0.1);
+        }
+        
+        .equipment-icon {
+            font-size: 3em;
+        }
+        
+        .equipment-label {
+            font-size: 0.8em;
+            margin-top: 5px;
+            font-weight: 700;
+        }
+        
+        .contents {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-height: 60px;
+            overflow: hidden;
+            font-size: 0.7em;
+            text-align: center;
+        }
+        
+        .substance-particle {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin: 1px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .temperature-indicator {
+            position: absolute;
+            top: -30px;
+            right: 0;
+            background: var(--danger);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: 700;
+        }
+        
+        /* Right Panel - Properties & Reactions */
+        .right-panel {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .properties-section {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .section-title {
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .property-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .property-label {
+            opacity: 0.7;
+            font-size: 0.9em;
+        }
+        
+        .property-value {
+            font-weight: 700;
+            font-family: monospace;
+        }
+        
+        .slider-control {
+            margin: 15px 0;
+        }
+        
+        .slider-control label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+        }
+        
+        .reaction-log {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.5);
+        }
+        
+        .reaction-item {
+            background: rgba(99, 102, 241, 0.1);
+            border-right: 4px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .reaction-equation {
+            font-family: monospace;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+        
+        .reaction-desc {
+            font-size: 0.85em;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+        
+        .action-buttons {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95em;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+            color: black;
+        }
+        
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .action-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        /* Context Menu */
+        .context-menu {
+            position: absolute;
+            background: rgba(30, 41, 59, 0.98);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 10px 0;
+            min-width: 200px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        
+        .context-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .context-item:hover {
+            background: rgba(99, 102, 241, 0.2);
+        }
+        
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 2px solid var(--primary);
+            border-radius: 30px;
+            padding: 40px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 2em;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        
+        .modal-close:hover {
+            opacity: 1;
+        }
+        
+        .crafting-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .craft-slot {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.05);
+            border: 3px dashed rgba(255,255,255,0.2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .craft-slot:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .craft-slot.filled {
+            border-style: solid;
+            border-color: var(--accent);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        /* Particles Canvas */
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            padding: 10px;
+            background: rgba(15, 23, 42, 0.5);
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: white;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+        
+        .tab:hover, .tab.active {
+            background: rgba(99, 102, 241, 0.3);
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-weight: 700;
+            z-index: 3000;
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 240px 1fr 280px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            .sidebar, .right-panel {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Sidebar - Inventory -->
+        <div class="sidebar">
+            <div class="panel-header">🧪 موجودی آزمایشگاه</div>
+            
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="جستجوی مواد، تجهیزات..." onkeyup="searchItems()">
+            </div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('chemicals')">مواد شیمیایی</button>
+                <button class="tab" onclick="switchTab('equipment')">تجهیزات</button>
+                <button class="tab" onclick="switchTab('bio')">بیولوژی</button>
+            </div>
+            
+            <div class="categories" id="categories">
+                <button class="category-btn active" onclick="filterCategory('all')">همه</button>
+                <button class="category-btn" onclick="filterCategory('element')">عناصر</button>
+                <button class="category-btn" onclick="filterCategory('compound')">ترکیبات</button>
+                <button class="category-btn" onclick="filterCategory('acid')">اسیدها</button>
+                <button class="category-btn" onclick="filterCategory('base')">بases</button>
+                <button class="category-btn" onclick="filterCategory('organic')">آلی</button>
+            </div>
+            
+            <div class="items-grid" id="itemsGrid">
+                <!-- Items will be generated by JS -->
+            </div>
+        </div>
+        
+        <!-- Main Lab Area -->
+        <div class="main-area">
+            <canvas id="particleCanvas"></canvas>
+            <div class="lab-table" id="labTable" ondrop="drop(event)" ondragover="allowDrop(event)" onclick="deselectAll(event)">
+                <div class="workspace" id="workspace">
+                    <!-- Dropped items will appear here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Properties -->
+        <div class="right-panel">
+            <div class="panel-header">⚙️ کنترل پنل</div>
+            
+            <div class="properties-section">
+                <div class="section-title">🌡️ شرایط آزمایش</div>
+                
+                <div class="slider-control">
+                    <label>دمای محیط: <span id="tempValue">25</span>°C</label>
+                    <input type="range" class="slider" id="temperature" min="-200" max="1000" value="25" oninput="updateCondition('temp', this.value)">
+                </div>
+                
+                <div class="slider-control">
+                    <label>فشار: <span id="pressureValue">1</span> atm</label>
+                    <input type="range" class="slider" id="pressure" min="0" max="100" value="1" step="0.1" oninput="updateCondition('pressure', this.value)">
+                </div>
+                
+                <div class="slider-control">
+                    <label>pH محیط: <span id="phValue">7</span></label>
+                    <input type="range" class="slider" id="ph" min="0" max="14" value="7" step="0.1" oninput="updateCondition('ph', this.value)">
+                </div>
+            </div>
+            
+            <div class="properties-section">
+                <div class="section-title">📊 وضعیت فعلی</div>
+                <div id="selectedProperties">
+                    <div class="property-row">
+                        <span class="property-label">مورد انتخاب شده:</span>
+                        <span class="property-value" id="selectedItemName">هیچ</span>
+                    </div>
+                    <div class="property-row">
+                        <span class="property-label">جرم:</span>
+                        <span class="property-valu
+                {id: 'fire_extinguisher', name: 'کپسول آتش‌نشانی', icon: '🧯', type: 'equipment', safety: true, emergency: true},
+                {id: 'first_aid_kit', name: 'جعبه کمک‌های اولیه', icon: '⛑️', type: 'equipment', safety: true, emergency: true},
+                {id: 'chemical_spill_kit', name: 'کیت نشت شیمیایی', icon: '🧽', type: 'equipment', safety: true, spill_cleanup: true},
+                {id: 'waste_container', name: 'مخزن پسماند', icon: '🗑️', type: 'equipment', waste: true, safety: true},
+                {id: 'sharps_container', name: 'مخزن اشیای تیز', icon: '📦', type: 'equipment', safety: true, sharps: true},
+                {id: 'parafilm', name: 'پارافیلم', icon: '🎞️', type: 'equipment', sealing: true, flexible: true},
+                {id: 'aluminum_foil', name: 'فویل آلومینیوم', icon: '⬜', type: 'equipment', covering: true, heat_resistant: true},
+                {id: 'cotton', name: 'پنبه', icon: '☁️', type: 'equipment', cleaning: true, plugging: true},
+                {id: 'rubber_bulb', name: 'بالون لاستیکی', icon: '🎈', type: 'equipment', pipetting: true},
+                {id: 'teflon_tape', name: 'نوار تفلون', icon: '➰', type: 'equipment', sealing: true, threading: true},
+                {id: 'vacuum_pump', name: 'پمپ واکuum', icon: '💨', type: 'equipment', vacuum: true},
+                {id: 'manometer', name: 'مانومتر', icon: '📊', type: 'equipment', pressure_measurement: true},
+                {id: 'gas_collector', name: 'جمع‌آوری گاز', icon: '🫙', type: 'equipment', gas_collection: true},
+                {id: 'deflagrating_spoon', name: 'قاشق تبخیر', icon: '🥄', type: 'equipment', burning: true},
+                {id: 'deflagrating_spoon_long', name: 'قاشق تبخیر بلند', icon: '🥄', type: 'equipment', burning: true, long_handle: true},
+                {id: 'crucible_tongs', name: 'انبرک بوته', icon: '🔧', type: 'equipment', high_temperature: true},
+                {id: 'pipe_clay_triangle', name: 'مثلث خاک رس', icon: '🔺', type: 'equipment', support: true, high_temperature: true},
+                {id: 'bunsen_burner', name: 'سرپیک بنزن', icon: '🔥', type: 'equipment', heating: true, gas: true, adjustable: true},
+                {id: 'meeker_burner', name: 'سرپیک میکر', icon: '🔥', type: 'equipment', heating: true, gas: true, broad_flame: true},
+                {id: 'teclu_burner', name: 'سرپیک تکلو', icon: '🔥', type: 'equipment', heating: true, gas: true, high_temperature: true},
+                {id: 'alcohol_lamp', name: 'چراغ الکلی', icon: '🕯️', type: 'equipment', heating: true, gentle: true, portable: true},
+                {id: 'hot_glove', name: 'دستکش حرارتی', icon: '🧤', type: 'equipment', heat_resistant: true, protection: true},
+                {id: 'asbestos_glove', name: 'دستکش آزبست', icon: '🧤', type: 'equipment', high_temperature: true, protection: true},
+                {id: 'face_shield', name: 'شیلد صورت', icon: '🛡️', type: 'equipment', protection: true, splash: true},
+                {id: 'hearing_protection', name: 'محافظ گوش', icon: '🎧', type: 'equipment', safety: true, noise: true},
+                {id: 'respirator', name: 'ماسک تنفسی', icon: '😷', type: 'equipment', safety: true, fumes: true},
+                {id: 'fume_extractor', name: 'مکش دود', icon: '💨', type: 'equipment', ventilation: true, portable: true},
+                {id: 'laser_goggles', name: 'عینک لیزر', icon: '🥽', type: 'equipment', laser_protection: true},
+                {id: 'uv_goggles', name: 'عینک UV', icon: '🥽', type: 'equipment', uv_protection: true},
+                {id: 'cryogenic_gloves', name: 'دستکش کریوژنیک', icon: '🧤', type: 'equipment', cryogenic: true, protection: true},
+                {id: 'cryogenic_apron', name: 'پیش‌بند کریوژنیک', icon: '🦺', type: 'equipment', cryogenic: true, protection: true},
+                {id: 'anti_static_wrist', name: 'بند آنتی‌استاتیک', icon: '⚡', type: 'equipment', static_control: true},
+                {id: 'grounding_wire', name: 'سیم زمین', icon: '⚡', type: 'equipment', safety: true, electrical: true},
+                {id: 'insulated_tools', name: 'ابزار عایق', icon: '🔧', type: 'equipment', electrical_safety: true},
+                {id: 'rfid_reader', name: 'RFID Reader', icon: '📡', type: 'equipment', tracking: true, inventory: true},
+                {id: 'barcode_scanner', name: 'بارکد اسکنر', icon: '🔍', type: 'equipment', tracking: true, inventory: true},
+                {id: 'ph_paper', name: 'کاغذ pH', icon: '📄', type: 'equipment', ph_test: true, qualitative: true},
+                {id: 'litmus_paper', name: 'کاغذ لیتمس', icon: '📄', type: 'equipment', acid_base_test: true},
+                {id: 'indicator_solution', name: 'محلول شناساگر', icon: '💧', type: 'equipment', ph_indicator: true},
+                {id: 'universal_indicator', name: 'شناساگر جهانی', icon: '🌈', type: 'equipment', ph_range: true},
+                {id: 'cobalt_chloride_paper', name: 'کاغذ کلرید کبالت', icon: '📄', type: 'equipment', moisture_test: true},
+                {id: 'lead_acetate_paper', name: 'کاغذ استات سرب', icon: '📄', type: 'equipment', h2s_test: true},
+                {id: 'starch_iodide_paper', name: 'کاغذ نشاسته-ید', icon: '📄', type: 'equipment', oxidizer_test: true},
+                {id: 'turmeric_paper', name: 'کاغذ زردچوبه', icon: '📄', type: 'equipment', borax_test: true},
+                {id: 'bench_mat', name: 'زیرانداز میز', icon: '🟫', type: 'equipment', protection: true, absorbent: true},
+                {id: 'spill_tray', name: 'سینی نشت', icon: '🟫', type: 'equipment', containment: true},
+                {id: 'drip_tray', name: 'سینی چکه', icon: '🟫', type: 'equipment', containment: true, small: true},
+                {id: 'carboy', name: 'کاربوی', icon: '💧', type: 'equipment', large_storage: true, liquid: true},
+                {id: 'amber_bottle', name: 'بطری قهوه‌ای', icon: '🍶', type: 'equipment', light_sensitive: true, storage: true},
+                {id: 'reagent_bottle', name: 'بطری معرف', icon: '🍶', type: 'equipment', chemical_storage: true, labeled: true},
+                {id: 'wash_bottle_deionized', name: 'شیشه شستشو (DI)', icon: '💧', type: 'equipment', pure_water: true},
+                {id: 'wash_bottle_tap', name: 'شیشه شستشو (آب لوله)', icon: '💧', type: 'equipment', tap_water: true},
+                {id: 'plastic_funnel', name: 'قیف پلاستیکی', icon: '🔽', type: 'equipment', chemical_resistant: true, break_resistant: true},
+                {id: 'separatory_funnel', name: 'قیف جداکننده', icon: '🔽', type: 'equipment', liquid_separation: true, stopcock: true},
+                {id: 'dropping_funnel', name: 'قیف قطره‌ای', icon: '💧', type: 'equipment', addition_control: true, stopcock: true},
+                {id: 'powder_funnel', name: 'قیف پودر', icon: '🔽', type: 'equipment', wide_mouth: true, solid: true},
+                {id: 'buchner_funnel', name: 'قیف بوخنر', icon: '🔽', type: 'equipment', vacuum_filtration: true},
+                {id: 'sintered_glass_funnel', name: 'قیف شیشه‌ای متخلخل', icon: '🔽', type: 'equipment', filtration: true, fritted: true},
+                {id: 'filter_flask', name: 'بالن صافی', icon: '⚗️', type: 'equipment', vacuum_filtration: true, heavy_wall: true},
+                {id: 'vacuum_adapter', name: 'آداپتور واکuum', icon: '🔌', type: 'equipment', vacuum_connection: true},
+                {id: 'rubber_stopper_1h', name: 'درپوش 1 سوراخ', icon: '🔴', type: 'equipment', 1-hole: true},
+                {id: 'rubber_stopper_2h', name: 'درپوش 2 سوراخ', icon: '🔴', type: 'equipment', 2-hole: true},
+                {id: 'rubber_stopper_solid', name: 'درپوش بدون سوراخ', icon: '🔴', type: 'equipment', solid: true},
+                {id: 'cork_stopper', name: 'درپوش چوب پنبه', icon: '🟤', type: 'equipment', natural: true, porous: true},
+                {id: 'silicone_stopper', name: 'درپوش سیلیکونی', icon: '🔴', type: 'equipment', chemical_resistant: true, reusable: true},
+                {id: 'glass_stopper', name: 'درپوش شیشه‌ای', icon: '⚪', type: 'equipment', ground_glass: true, precise: true},
+                {id: 'plastic_cap', name: 'درب پلاستیکی', icon: '🔵', type: 'equipment', screw_cap: true, chemical_resistant: true},
+                {id: 'tamper_evident_cap', name: 'درب ضد دستکاری', icon: '🔒', type: 'equipment', safety_seal: true},
+                {id: 'child_resistant_cap', name: 'درب کودک‌گیر', icon: '👶', type: 'equipment', safety: true, child_proof: true},
+                {id: 'crimp_cap', name: 'درب پرچی', icon: '🔴', type: 'equipment', vial: true, seal: true},
+                {id: 'septum_cap', name: 'درب سپتوم', icon: '🔴', type: 'equipment', injection_port: true, resealable: true},
+                {id: 'nmr_tube', name: 'لوله NMR', icon: '🧪', type: 'equipment', nmr: true, thin_walled: true},
+                {id: 'capillary_tube', name: 'لوله موئینه', icon: '🧪', type: 'equipment', melting_point: true, small: true},
+                {id: 'thiele_tube', name: 'لوله تیله', icon: '🧪', type: 'equipment', melting_point: true, heating: true},
+                {id: 'melting_point_apparatus', name: 'دستگاه نقطه ذوب', icon: '🌡️', type: 'equipment', automated: true, digital: true},
+                {id: 'refractometer', name: 'شکست‌سنج', icon: '👁️', type: 'equipment', refractive_index: true},
+                {id: 'polarimeter', name: 'قطبش‌سنج', icon: '☀️', type: 'equipment', optical_rotation: true},
+                {id: 'viscometer', name: 'لزجت‌سنج', icon: '🍯', type: 'equipment', viscosity: true},
+                {id: 'densitometer', name: 'چگالی‌سنج', icon: '⚖️', type: 'equipment', density: true},
+                {id: 'conductivity_meter', name: 'رسانایی‌سنج', icon: '⚡', type: 'equipment', conductivity: true},
+                {id: ' dissolved_oxygen_meter', name: 'اکسیژن‌سنج', icon: '💧', type: 'equipment', DO: true, aquatic: true},
+                {id: 'turbidimeter', name: 'کدورت‌سنج', icon: '☁️', type: 'equipment', turbidity: true},
+                {id: 'colorimeter', name: 'رنگ‌سنج', icon: '🌈', type: 'equipment', color: true, concentration: true},
+                {id: 'fluorometer', name: 'فلورسانس‌سنج', icon: '✨', type: 'equipment', fluorescence: true, sensitive: true},
+                {id: 'luminometer', name: 'نورسنج', icon: '💡', type: 'equipment', bioluminescence: true, ATP: true},
+                {id: 'gc_ms', name: 'GC-MS', icon: '📊', type: 'equipment', chromatography: true, mass_spec: true, analysis: true},
+                {id: 'lc_ms', name: 'LC-MS', icon: '📊', type: 'equipment', liquid_chromatography: true, mass_spec: true, analysis: true},
+                {id: 'nmr_spectrometer', name: 'طیف‌سنج NMR', icon: '🧲', type: 'equipment', nuclear_magnetic_resonance: true, structure: true},
+                {id: 'ir_spectrometer', name: 'طیف‌سنج IR', icon: '📡', type: 'equipment', infrared: true, functional_groups: true},
+                {id: 'uv_vis_spectrometer', name: 'طیف‌سنج UV-Vis', icon: '🌈', type: 'equipment', ultraviolet: true, visible: true, concentration: true},
+                {id: 'atomic_absorption', name: 'جذب اتمی', icon: '⚛️', type: 'equipment', AA: true, metals: true},
+                {id: 'icp_ms', name: 'ICP-MS', icon: '⚛️', type: 'equipment', inductively_coupled_plasma: true, trace_metals: true},
+                {id: 'xrd', name: 'XRD', icon: '💎', type: 'equipment', x_ray_diffraction: true, crystal_structure: true},
+                {id: 'sem', name: 'SEM', icon: '🔬', type: 'equipment', scanning_electron_microscope: true, surface: true},
+                {id: 'tem', name: 'TEM', icon: '🔬', type: 'equipment', transmission_electron_microscope: true, internal_structure: true},
+                {id: 'afm', name: 'AFM', icon: '🔬', type: 'equipment', atomic_force_microscope: true, nanoscale: true},
+                {id: 'stm', name: 'STM', icon: '🔬', type: 'equipment', scanning_tunneling_microscope: true, atomic_resolution: true},
+                {id: 'dsc', name: 'DSC', icon: '🌡️', type: 'equipment', differential_scanning_calorimetry: true, thermal_analysis: true},
+                {id: 'tga', name: 'TGA', icon: '⚖️', type: 'equipment', thermogravimetric_analysis: true, thermal_stability: true},
+                {id: 'dma', name: 'DMA', icon: '〰️', type: 'equipment', dynamic_mechanical_analysis: true, mechanical_properties: true},
+                {id: 'rheometer', name: 'رئومتر', icon: '🌀', type: 'equipment', rheology: true, flow_properties: true},
+                {id: 'tensiometer', name: 'کشش‌سنج', icon: '💧', type: 'equipment', surface_tension: true},
+                {id: 'contact_angle_goniometer', name: 'گونیومتر', icon: '🔍', type: 'equipment', wettability: true, surface_energy: true},
+                {id: 'zeta_potential', name: 'زتا پتانسیل', icon: '⚡', type: 'equipment', colloid: true, particle_charge: true},
+                {id: 'particle_size_analyzer', name: 'دانه‌سنج', icon: '⚪', type: 'equipment', particle_size: true, distribution: true},
+                {id: 'bet_surface_area', name: 'BET', icon: '⬜', type: 'equipment', surface_area: true, porosity: true},
+                {id: 'porosimeter', name: 'تخلخل‌سنج', icon: '⬜', type: 'equipment', porosity: true, pore_size: true},
+                {id: 'gas_chromatograph', name: 'کروماتوگراف گازی', icon: '📈', type: 'equipment', GC: true, separation: true},
+                {id: 'hplc', name: 'HPLC', icon: '📈', type: 'equipment', high_performance_liquid_chromatography: true, separation: true},
+                {id: 'ion_chromatograph', name: 'کروماتوگراف یونی', icon: '📈', type: 'equipment', IC: true, ions: true},
+                {id: 'gel_permeation', name: 'GPC', icon: '📈', type: 'equipment', gel_permeation_chromatography: true, molecular_weight: true},
+                {id: 'affinity_chromatography', name: 'کروماتوگرافی affinity', icon: '📈', type: 'equipment', protein_purification: true, specific: true},
+                {id: 'electrophoresis', name: 'الکتروفورز', icon: '⚡', type: 'equipment', gel_electrophoresis: true, DNA_protein: true},
+                {id: 'western_blot', name: 'Western Blot', icon: '📄', type: 'equipment', protein_detection: true, antibody: true},
+                {id: 'southern_blot', name: 'Southern Blot', icon: '📄', type: 'equipment', DNA_detection: true, hybridization: true},
+                {id: 'pcr_machine', name: 'ترمال سایکلر', icon: '🔄', type: 'equipment', PCR: true, DNA_amplification: true},
+                {id: 'qpcr', name: 'qPCR', icon: '📊', type: 'equipment', quantitative_PCR: true, real_time: true},
+                {id: 'dna_sequencer', name: 'توالی‌یاب DNA', icon: '🧬', type: 'equipment', sequencing: true, Sanger: true, NGS: true},
+                {id: 'flow_cytometer', name: 'سایتومتر جریانی', icon: '💧', type: 'equipment', cell_sorting: true, analysis: true},
+                {id: 'cell_sorter', name: 'سلول‌ساز', icon: '💧', type: 'equipment', FACS: true, sorting: true},
+                {id: 'microplate_reader', name: 'میکروپلیت ریدر', icon: '📊', type: 'equipment', high_throughput: true, 96_well: true},
+                {id: 'shaking_incubator', name: 'شیکر انکوباتور', icon: '🔄', type: 'equipment', shaking: true, temperature_control: true, cell_culture: true},
+                {id: 'co2_incubator', name: 'انکوباتور CO2', icon: '🥚', type: 'equipment', CO2_control: true, cell_culture: true, mammalian: true},
+                {id: 'biosafety_cabinet', name: 'کابینت ایمنی بیولوژیک', icon: '💨', type: 'equipment', BSC: true, sterile: true, protection: true},
+                {id: 'laminar_flow_hood', name: 'هود لامینار', icon: '💨', type: 'equipment', clean_bench: true, sterile: true},
+                {id: 'inverted_microscope', name: 'میکروسکوپ معکوس', icon: '🔬', type: 'equipment', cell_observation: true, culture: true},
+                {id: 'confocal_microscope', name: 'میکروسکوپ کانفوکال', icon: '🔬', type: 'equipment', 3D_imaging: true, fluorescence: true},
+                {id: 'fluorescence_microscope', name: 'میکروسکوپ فلورسانس', icon: '🔬', type: 'equipment', fluorescence: true, specific_labeling: true},
+                {id: 'phase_contrast_microscope', name: 'میکروسکوپ فاز کنتراست', icon: '🔬', type: 'equipment', live_cells: true, unstained: true},
+                {id: 'electron_microscope', name: 'میکروسکوپ الکترونی', icon: '🔬', type: 'equipment', TEM_SEM: true, high_resolution: true},
+                {id: 'autoclave_vertical', name: 'اتوکلاو عمودی', icon: '♨️', type: 'equipment', sterilization: true, large_capacity: true},
+                {id: 'autoclave_horizontal', name: 'اتوکلاو افقی', icon: '♨️', type: 'equipment', sterilization: true, batch_processing: true},
+                {id: 'dry_heat_oven', name: 'آون خشک', icon: '🔥', type: 'equipment', dry_heat: true, sterilization: true, glassware: true},
+                {id: 'uv_sterilizer', name: 'استریلایزر UV', icon: '☀️', type: 'equipment', UV_sterilization: true, surface: true},
+                {id: 'filtration_unit', name: 'واحد فیلتراسیون', icon: '💧', type: 'equipment', sterile_filtration: true, 0.22_um: true},
+                {id: 'milli_q', name: 'Milli-Q', icon: '💧', type: 'equipment', ultra_pure_water: true, 18_MOhm: true},
+                {id: 'water_purification', name: 'دستگاه تصفیه آب', icon: '💧', type: 'equipment', RO: true, DI: true, pure: true},
+                {id: 'ultra_freezer', name: 'اولترا فریزر', icon: '❄️', type: 'equipment', -80C: true, long_term_storage: true},
+                {id: 'cryogenic_storage', name: 'مخزن کریوژنیک', icon: '❄️', type: 'equipment', liquid_nitrogen: true, cell_storage: true},
+                {id: 'refrigerator_lab', name: 'یخچال آزمایشگاهی', icon: '❄️', type: 'equipment', 4C: true, chemical_storage: true},
+                {id: 'freezer_lab', name: 'فریزر آزمایشگاهی', icon: '❄️', type: 'equipment', -20C: true, sample_storage: true},
+                {id: 'ice_machine', name: 'دستگاه یخ', icon: '🧊', type: 'equipment', ice_making: true, flaked: true},
+                {id: 'water_bath_shaking', name: 'حمام آب شیکر', icon: '🛁', type: 'equipment', temperature_control: true, shaking: true},
+                {id: 'oil_bath', name: 'حمام روغن', icon: '🛁', type: 'equipment', high_temperature: true, uniform_heating: true},
+                {id: 'sand_bath', name: 'حمام شن', icon: '🛁', type: 'equipment', very_high_temperature: true, slow_heating: true},
+                {id: 'heating_mantle', name: 'مانتوی حرارتی', icon: '🔥', type: 'equipment', round_bottom_flask: true, controlled_heating: true},
+                {id: 'heating_block', name: 'بلوک حرارتی', icon: '🔥', type: 'equipment', dry_block: true, precise_temperature: true},
+                {id: 'cooling_block', name: 'بلوک خنک‌کننده', icon: '❄️', type: 'equipment', 0C: true, 4C: true, reactions: true},
+                {id: 'cold_finger', name: 'انگشت سرد', icon: '❄️', type: 'equipment', condensation: true, sublimation: true},
+                {id: 'reflux_condenser', name: 'کندانسور رفلاکس', icon: '❄️', type: 'equipment', continuous_boiling: true, cooling: true},
+                {id: 'distillation_column', name: 'ستون تقطیر', icon: '⚗️', type: 'equipment', fractional_distillation: true, separation: true},
+                {id: 'spinning_band_column', name: 'ستون Spinning Band', icon: '⚗️', type: 'equipment', high_efficiency: true, theoretical_plates: true},
+                {id: 'rotary_evaporator', name: 'روتاری اواپراتور', icon: '💨', type: 'equipment', solvent_removal: true, gentle: true, vacuum: true},
+                {id: 'freeze_dryer', name: 'لیوفیلیزاتور', icon: '❄️', type: 'equipment', freeze_drying: true, lyophilization: true},
+                {id: 'spray_dryer', name: 'اسپری درایر', icon: '💨', type: 'equipment', spray_drying: true, powder_production: true},
+                {id: 'vacuum_oven', name: 'آون واکuum', icon: '🔥', type: 'equipment', drying: true, vacuum: true, low_temperature: true},
+                {id: 'glove_box', name: 'گلاوباکس', icon: '👐', type: 'equipment', inert_atmosphere: tru
+                {id: 'glove_box', name: 'گلاوباکس', icon: '👐', type: 'equipment', inert_atmosphere: true, moisture_free: true, manipulation: true},
+                {id: 'schlenk_line', name: 'خط شلنک', icon: '💨', type: 'equipment', air_free: true, vacuum: true, inert_gas: true},
+                {id: 'high_vacuum_pump', name: 'پمپ واکuum بالا', icon: '💨', type: 'equipment', high_vacuum: true, diffusion_pump: true, turbo: true},
+                {id: 'diaphragm_pump', name: 'پمپ دیافراگمی', icon: '💨', type: 'equipment', oil_free: true, rough_vacuum: true},
+                {id: 'rotary_vane_pump', name: 'پمپ روتاری', icon: '💨', type: 'equipment', oil_sealed: true, medium_vacuum: true},
+                {id: 'scroll_pump', name: 'پمپ اسکرول', icon: '💨', type: 'equipment', dry: true, reliable: true},
+                {id: 'cryopump', name: 'پمپ کریو', icon: '❄️', type: 'equipment', ultra_high_vacuum: true, cryogenic: true},
+                {id: 'ion_pump', name: 'پمپ یونی', icon: '⚡', type: 'equipment', ultra_high_vacuum: true, clean: true},
+                {id: 'turbomolecular_pump', name: 'پمپ توربو', icon: '💨', type: 'equipment', high_vacuum: true, fast: true},
+                {id: 'pressure_sensor', name: 'سنسور فشار', icon: '📊', type: 'equipment', vacuum_measurement: true, precise: true},
+                {id: 'pirani_gauge', name: 'گیج پیرانی', icon: '📊', type: 'equipment', rough_vacuum: true, thermal: true},
+                {id: 'ionization_gauge', name: 'گیج یونیزاسیون', icon: '📊', type: 'equipment', high_vacuum: true, accurate: true},
+                {id: 'mass_flow_controller', name: 'کنترل‌کننده جریان', icon: '📊', type: 'equipment', gas_flow: true, precise: true, controlled: true},
+                {id: 'needle_valve', name: 'شیر سوزنی', icon: '🔧', type: 'equipment', fine_control: true, gas: true, liquid: true},
+                {id: 'butterfly_valve', name: 'شیر پروانه‌ای', icon: '🔧', type: 'equipment', large_flow: true, quick: true},
+                {id: 'solenoid_valve', name: 'شیر سلونوئید', icon: '⚡', type: 'equipment', electrical: true, on_off: true},
+                {id: 'check_valve', name: 'شیر یکطرفه', icon: '➡️', type: 'equipment', backflow_prevention: true, safety: true},
+                {id: 'relief_valve', name: 'شیر اطمینان', icon: '⚠️', type: 'equipment', overpressure_protection: true, safety: true},
+                {id: 'pressure_regulator', name: 'رگولاتور فشار', icon: '⚙️', type: 'equipment', pressure_control: true, gas_cylinder: true},
+                {id: 'gas_cylinder', name: 'کپسول گاز', icon: '⚪', type: 'equipment', gas_storage: true, high_pressure: true},
+                {id: 'gas_cylinder_cart', name: 'چرخ کپسول', icon: '🛒', type: 'equipment', transport: true, safety: true},
+                {id: 'cylinder_stand', name: 'پایه کپسول', icon: '🏗️', type: 'equipment', securing: true, safety: true},
+                {id: 'cylinder_pressure_regulator', name: 'رگولاتور کپسول', icon: '⚙️', type: 'equipment', two_stage: true, precise: true},
+                {id: 'gas_purifier', name: 'تصفیه‌کننده گاز', icon: '💨', type: 'equipment', oxygen_removal: true, moisture_removal: true},
+                {id: 'gas_scrubber', name: 'اسکرابر گاز', icon: '💨', type: 'equipment', toxic_gas_removal: true, safety: true},
+                {id: 'fume_scrubber', name: 'اسکرابر دود', icon: '💨', type: 'equipment', acid_fumes: true, neutralization: true},
+                {id: 'activated_carbon_filter', name: 'فیلتر کربن فعال', icon: '⬛', type: 'equipment', organic_vapor: true, adsorption: true},
+                {id: 'hepa_filter', name: 'فیلتر HEPA', icon: '⬜', type: 'equipment', particulate: true, '99.97_percent': true},
+                {id: 'ulpa_filter', name: 'فیلتر ULPA', icon: '⬜', type: 'equipment', ultra_low_penetration: true, '99.999_percent': true},
+                {id: 'charcoal_trap', name: 'تله زغال', icon: '⬛', type: 'equipment', radioactive: true, iodine: true},
+                {id: 'cold_trap', name: 'تله سرد', icon: '❄️', type: 'equipment', volatile_solvents: true, vacuum_protection: true},
+                {id: 'liquid_nitrogen_trap', name: 'تله نیتروژن مایع', icon: '❄️', type: 'equipment', cryogenic: true, vacuum: true},
+                {id: 'oil_mist_filter', name: 'فیلتر مه روغن', icon: '💨', type: 'equipment', pump_protection: true, clean: true},
+                {id: 'gas_drying_tube', name: 'لوله خشک‌کن گاز', icon: '💨', type: 'equipment', drying: true, desiccant: true},
+                {id: 'calcium_chloride_tube', name: 'لوله کلسیم کلرید', icon: '💨', type: 'equipment', drying: true, moisture: true},
+                {id: 'phosphorus_pentoxide_tube', name: 'لوله P2O5', icon: '💨', type: 'equipment', strong_drying: true, aggressive: true},
+                {id: 'soda_lime_tube', name: 'لوله سودا لایم', icon: '💨', type: 'equipment', CO2_absorption: true, moisture: true},
+                {id: 'ascarite_tube', name: 'لوله اسکاریت', icon: '💨', type: 'equipment', CO2_absorption: true, efficient: true},
+                {id: 'anhydrone_tube', name: 'لوله آنهیدرون', icon: '💨', type: 'equipment', moisture: true, magnesium_perchlorate: true},
+                {id: 'drierite', name: 'دریریت', icon: '💧', type: 'equipment', calcium_sulfate: true, indicator: true, reusable: true},
+                {id: 'molecular_sieve', name: 'الک مولکولی', icon: '⬜', type: 'equipment', zeolite: true, selective: true, drying: true},
+                {id: 'silica_gel', name: 'سیلیکا ژل', icon: '🔵', type: 'equipment', moisture_indicator: true, reusable: true, drying: true},
+                {id: 'dehumidifier', name: 'رطوبت‌گیر', icon: '💧', type: 'equipment', room: true, large_scale: true},
+                {id: 'humidity_controller', name: 'کنترل‌کننده رطوبت', icon: '💧', type: 'equipment', precise: true, chamber: true},
+                {id: 'environmental_chamber', name: 'اتاقک محیطی', icon: '🏠', type: 'equipment', temperature: true, humidity: true, light: true, controlled: true},
+                {id: 'growth_chamber', name: 'اتاقک رشد', icon: '🌱', type: 'equipment', plant: true, light: true, temperature: true, humidity: true},
+                {id: 'incubator_shaker', name: 'انکوباتور شیکر', icon: '🔄', type: 'equipment', microbial: true, cell_culture: true, aeration: true},
+                {id: 'roller_bottle_apparatus', name: 'دستگاه رولر', icon: '🔄', type: 'equipment', cell_culture: true, large_scale: true, mammalian: true},
+                {id: 'bioreactor', name: 'بیوراکتور', icon: '⚗️', type: 'equipment', fermentation: true, cell_culture: true, controlled: true},
+                {id: 'fermenter', name: 'فرمانتر', icon: '⚗️', type: 'equipment', microbial: true, large_scale: true, industrial: true},
+                {id: 'chemostat', name: 'شموس tat', icon: '⚗️', type: 'equipment', continuous_culture: true, steady_state: true},
+                {id: 'turbidostat', name: 'توربیدوستات', icon: '⚗️', type: 'equipment', turbidity_control: true, cell_density: true},
+                {id: 'photobioreactor', name: 'فتوبیوراکتور', icon: '☀️', type: 'equipment', algae: true, photosynthetic: true, light_controlled: true},
+                {id: 'membrane_bioreactor', name: 'MBR', icon: '⚗️', type: 'equipment', membrane: true, filtration: true, wastewater: true},
+                {id: 'dialysis_tubing', name: 'لوله دیالیز', icon: '💧', type: 'equipment', semipermeable: true, molecular_separation: true},
+                {id: 'dialysis_membrane', name: 'غشای دیالیز', icon: '⬜', type: 'equipment', flat_sheet: true, protein_purification: true},
+                {id: 'ultrafiltration_unit', name: 'واحد اولترافیلتراسیون', icon: '💧', type: 'equipment', concentration: true, protein: true, membrane: true},
+                {id: 'diafiltration_system', name: 'سیستم دیafiltration', icon: '💧', type: 'equipment', buffer_exchange: true, protein: true},
+                {id: 'tangential_flow_filtration', name: 'TFF', icon: '💧', type: 'equipment', tangential: true, large_scale: true, concentration: true},
+                {id: 'depth_filter', name: 'فیلتر عمقی', icon: '⬜', type: 'equipment', clarification: true, high_capacity: true},
+                {id: 'sterile_filter', name: 'فیلتر استریل', icon: '⬜', type: 'equipment', '0.22_um': true, '0.45_um': true, sterilizing: true},
+                {id: 'syringe_filter', name: 'سیرینج فیلتر', icon: '💉', type: 'equipment', small_scale: true, quick: true, sterile: true},
+                {id: 'vacuum_filtration_flask', name: 'بالن فیلتر واکuum', icon: '⚗️', type: 'equipment', large_volume: true, fast: true},
+                {id: 'filter_funnel_glass', name: 'قیف فیلتر شیشه‌ای', icon: '🔽', type: 'equipment', fritted: true, chemical_resistant: true},
+                {id: 'filter_funnel_plastic', name: 'قیف فیلتر پلاستیکی', icon: '🔽', type: 'equipment', disposable: true, convenient: true},
+                {id: 'analytical_balance', name: 'ترازوی تحلیلی', icon: '⚖️', type: 'equipment', '0.0001_g': true, precise: true, draft_shield: true},
+                {id: 'microbalance', name: 'میکروبالانس', icon: '⚖️', type: 'equipment', '0.000001_g': true, ultra_precise: true, vibration_isolated: true},
+                {id: 'moisture_balance', name: 'ترازوی رطوبت', icon: '⚖️', type: 'equipment', drying: true, moisture_content: true, integrated: true},
+                {id: 'precision_balance', name: 'ترازوی دقیق', icon: '⚖️', type: 'equipment', '0.001_g': true, general: true},
+                {id: 'top_loading_balance', name: 'ترازوی بالا-کشو', icon: '⚖️', type: 'equipment', '0.01_g': true, large_capacity: true, quick: true},
+                {id: 'portable_balance', name: 'ترازوی قابل حمل', icon: '⚖️', type: 'equipment', battery: true, field: true, '0.1_g': true},
+                {id: 'mass_comparator', name: 'مقایسه‌گر جرم', icon: '⚖️', type: 'equipment', calibration: true, standard: true, highest_precision: true},
+                {id: 'weight_set', name: 'ست وزنه', icon: '⚖️', type: 'equipment', calibration: true, certified: true, class_E1: true, class_F1: true},
+                {id: 'density_kit', name: 'کیت چگالی', icon: '⚖️', type: 'equipment', solid_density: true, liquid_density: true, balance_accessory: true},
+                {id: 'pipette_calibration', name: 'کالیبراسیون پیپت', icon: '💧', type: 'equipment', gravimetric: true, accurate: true, ISO8655: true},
+                {id: 'thermometer_calibration', name: 'کالیبراسیون ترمومتر', icon: '🌡️', type: 'equipment', fixed_points: true, ITS90: true, accurate: true},
+                {id: 'ph_calibration', name: 'کالیبراسیون pH', icon: '📊', type: 'equipment', buffer_solutions: true, 3_point: true, accurate: true},
+                {id: 'conductivity_calibration', name: 'کالیبراسیون رسانایی', icon: '⚡', type: 'equipment', standard_solutions: true, cell_constant: true},
+                {id: 'titrator', name: 'تیتراتور', icon: '💧', type: 'equipment', automated: true, equivalence_point: true, precise: true},
+                {id: 'potentiometric_titrator', name: 'تیتراتور پتانسیومتریک', icon: '⚡', type: 'equipment', pH_electrode: true, acid_base: true, redox: true},
+                {id: 'karl_fischer_titrator', name: 'تیتراتور کارل فیشر', icon: '💧', type: 'equipment', moisture: true, trace: true, coulometric: true, volumetric: true},
+                {id: 'automatic_burette', name: 'بورت اتوماتیک', icon: '💧', type: 'equipment', motor_driven: true, precise: true, convenient: true},
+                {id: 'digital_burette', name: 'بورت دیجیتال', icon: '💧', type: 'equipment', battery: true, portable: true, accurate: true},
+                {id: 'titration_stand', name: 'پایه تیتراسیون', icon: '🏗️', type: 'equipment', magnetic: true, white_background: true, convenient: true},
+                {id: 'electrode_ph', name: 'الکترود pH', icon: '📊', type: 'equipment', glass: true, reference: true, combination: true},
+                {id: 'electrode_reference', name: 'الکترود مرجع', icon: '⚡', type: 'equipment', Ag_AgCl: true, stable: true, essential: true},
+                {id: 'electrode_ion_selective', name: 'الکترود یون‌انتخابی', icon: '⚡', type: 'equipment', specific_ion: true, fluoride: true, sodium: true, calcium: true},
+                {id: 'electrode_conductivity', name: 'الکترود رسانایی', icon: '⚡', type: 'equipment', cell_constant: true, temperature_compensation: true},
+                {id: 'electrode_dissolved_oxygen', name: 'الکترود DO', icon: '💧', type: 'equipment', polarographic: true, optical: true, membrane: true},
+                {id: 'electrode_orp', name: 'الکترود ORP', icon: '⚡', type: 'equipment', redox: true, platinum: true, oxidation_reduction: true},
+                {id: 'electrode_temperature', name: 'الکترود دما', icon: '🌡️', type: 'equipment', compensation: true, accurate: true, integrated: true},
+                {id: 'magnetic_stirrer_hotplate', name: 'همزن مغناطیسی-هات پلیت', icon: '🧲', type: 'equipment', combined: true, convenient: true, temperature_control: true},
+                {id: 'overhead_stirrer', name: 'همزن بالاسری', icon: '🌀', type: 'equipment', high_torque: true, viscous: true, large_volume: true},
+                {id: 'homogenizer', name: 'هموژنایزر', icon: '🌀', type: 'equipment', tissue: true, cell_disruption: true, high_speed: true},
+                {id: 'ultrasonic_homogenizer', name: 'هموژنایزر اولتراسونیک', icon: '🔊', type: 'equipment', probe: true, cavitation: true, cell_lysis: true},
+                {id: 'bead_mill', name: 'آسیاب گلوله‌ای', icon: '⚪', type: 'equipment', beads: true, cell_disruption: true, microbial: true},
+                {id: 'french_press', name: 'پرس فرنچ', icon: '🔧', type: 'equipment', high_pressure: true, cell_disruption: true, bacterial: true},
+                {id: 'cell_disruptor', name: 'سلول‌شکن', icon: '💥', type: 'equipment', mechanical: true, enzymatic: true, chemical: true},
+                {id: 'sonicator_bath', name: 'حمام سونیکاتور', icon: '🔊', type: 'equipment', cleaning: true, degassing: true, extraction: true},
+                {id: 'sonicator_probe', name: 'سونیکاتور پروب', icon: '🔊', type: 'equipment', high_intensity: true, direct: true, powerful: true},
+                {id: 'mixer_mill', name: 'میل میکسر', icon: '⚪', type: 'equipment', grinding: true, mixing: true, small_scale: true},
+                {id: 'planetary_ball_mill', name: 'آسیاب گلوله‌ای سیاره‌ای', icon: '⚪', type: 'equipment', fine_grinding: true, nanomaterials: true, high_energy: true},
+                {id: 'cryomill', name: 'کریومیل', icon: '❄️', type: 'equipment', cryogenic: true, liquid_nitrogen: true, heat_sensitive: true},
+                {id: 'cutting_mill', name: 'آسیاب برشی', icon: '✂️', type: 'equipment', coarse: true, fibrous: true, preliminary: true},
+                {id: 'hammer_mill', name: 'آسیاب چکشی', icon: '🔨', type: 'equipment', impact: true, brittle: true, high_throughput: true},
+                {id: 'jet_mill', name: 'آسیاب جت', icon: '💨', type: 'equipment', micronization: true, air: true, superfine: true},
+                {id: 'sieve_shaker', name: 'شیکر الک', icon: '📳', type: 'equipment', particle_size: true, separation: true, standardized: true},
+                {id: 'test_sieve', name: 'الک آزمایشی', icon: '⬜', type: 'equipment', ISO3310: true, ASTM: true, certified: true},
+                {id: 'air_jet_sieve', name: 'الک جت هوا', icon: '💨', type: 'equipment', fine_particles: true, dispersion: true, accurate: true},
+                {id: 'laser_diffraction', name: 'پاشش لیزری', icon: '🔴', type: 'equipment', particle_size: true, wide_range: true, fast: true},
+                {id: 'dynamic_light_scattering', name: 'DLS', icon: '💡', type: 'equipment', nanoparticles: true, colloids: true, zeta_potential: true},
+                {id: 'sedimentation_balance', name: 'ترازوی رسوب', icon: '⚖️', type: 'equipment', particle_size: true, gravitational: true, accurate: true},
+                {id: 'coulter_counter', name: 'شمارنده کولتر', icon: '⚪', type: 'equipment', particle_count: true, size_distribution: true, electrical: true},
+                {id: 'flow_camera', name: 'دوربین جریانی', icon: '📷', type: 'equipment', particle_imaging: true, morphology: true, real_time: true},
+                {id: 'raman_spectrometer', name: 'طیف‌سنج رامان', icon: '💡', type: 'equipment', molecular_vibrations: true, non_destructive: true, water_compatible: true},
+                {id: 'ftir_microscope', name: 'میکروسکوپ FTIR', icon: '🔬', type: 'equipment', chemical_imaging: true, spatial_resolution: true, mapping: true},
+                {id: 'circular_dichroism', name: 'دی‌کرویسم دایره‌ای', icon: '☀️', type: 'equipment', protein_structure: true, chirality: true, secondary_structure: true},
+                {id: 'fluorescence_polarization', name: 'قطبش فلورسانس', icon: '💡', type: 'equipment', molecular_rotation: true, binding: true, high_throughput: true},
+                {id: 'surface_plasmon_resonance', name: 'SPR', icon: '⚡', type: 'equipment', biomolecular_interactions: true, label_free: true, kinetics: true},
+                {id: 'isothermal_titration_calorimetry', name: 'ITC', icon: '🌡️', type: 'equipment', binding_thermodynamics: true, heat: true, stoichiometry: true},
+                {id: 'differential_scanning_calorimetry_protein', name: 'DSC پروتئین', icon: '🌡️', type: 'equipment', thermal_stability: true, unfolding: true, Tm: true},
+                {id: 'microscale_thermophoresis', name: 'MST', icon: '☀️', type: 'equipment', molecular_interactions: true, temperature_gradient: true, label_free: true},
+                {id: 'bio_layer_interferometry', name: 'BLI', icon: '〰️', type: 'equipment', protein_interactions: true, label_free: true, real_time: true},
+                {id: 'analytical_ultracentrifuge', name: 'اولتراسانتریفیوژ تحلیلی', icon: '🔄', type: 'equipment', sedimentation_velocity: true, molecular_weight: true, shape: true},
+                {id: 'preparative_ultracentrifuge', name: 'اولتراسانتریفیوژ تهیه‌ای', icon: '🔄', type: 'equipment', high_speed: true, fractionation: true, large_scale: true},
+                {id: 'density_gradient_ultracentrifuge', name: 'اولتراسانتریفیوژ گرادیان چگالی', icon: '🔄', type: 'equipment', CsCl: true, sucrose: true, purification: true},
+                {id: 'zonal_rotor', name: 'روتور زونال', icon: '🔄', type: 'equipment', large_scale: true, continuous: true, virus: true},
+                {id: 'fixed_angle_rotor', name: 'روتور زاویه‌ثابت', icon: '🔄', type: 'equipment', pelleting: true, high_speed: true, general: true},
+                {id: 'swinging_bucket_rotor', name: 'روتور سطل‌تعلیقی', icon: '🔄', type: 'equipment', density_gradient: true, bands: true, separation: true},
+                {id: 'vertical_rotor', name: 'روتور عمودی', icon: '🔄', type: 'equipment', isopycnic: true, DNA: true, RNA: true},
+                {id: 'near_buoyant_density', name: 'نزدیک چگالی شناور', icon: '🔄', type: 'equipment', equilibrium: true, precise: true, analytical: true},
+                {id: 'kinetic_analysis_spectrophotometer', name: 'اسپکتروفتومتر سینتیک', icon: '📊', type: 'equipment', enzyme_kinetics: true, rapid_mixing: true, stopped_flow: true},
+                {id: 'quench_flow', name: 'کوئنچ فلو', icon: '💨', type: 'equipment', millisecond: true, rapid_reactions: true, chemical: true},
+                {id: 'temperature_jump', name: 'پرش دما', icon: '🌡️', type: 'equipment', microsecond: true, relaxation: true, fast_kinetics: true},
+                {id: 'pressure_jump', name: 'پرش فشار', icon: '💨', type: 'equipment', high_pressure: true, volume_change: true, fast: true},
+                {id: 'flash_photolysis', name: 'فوتولیز فلش', icon: '⚡', type: 'equipment', laser: true, transient_species: true, radicals: true},
+                {id: 'pulse_radiolysis', name: 'رادیولیز پالسی', icon: '☢️', type: 'equipment', electron_pulse: true, radicals: true, nanosecond: true},
+// ==================== REACTION SYSTEM ====================
+// 1000+ possible reactions
+const reactionsDB = [
+    {
+        id: 'combustion_methane',
+        name: 'احتراق متان',
+        inputs: ['CH4', 'O2'],
+        outputs: ['CO2', 'H2O'],
+        conditions: {temp: 500, catalyst: 'none'},
+        equation: 'CH₄ + 2O₂ → CO₂ + 2H₂O',
+        energy: 'exothermic',
+        description: 'احتراق کامل متان با اکسیژن'
+    },
+    {
+        id: 'acid_base_neutralization',
+        name: 'خنثی‌سازی اسید-باز',
+        inputs: ['HCl', 'NaOH'],
+        outputs: ['NaCl', 'H2O'],
+        conditions: {temp: 25, catalyst: 'none'},
+        equation: 'HCl + NaOH → NaCl + H₂O',
+        energy: 'exothermic',
+        description: 'واکنش خنثی‌سازی قوی'
+    },
+    {
+        id: 'precipitation_silver_chloride',
+        name: 'رسوب نقره کلرید',
+        inputs: ['AgNO3', 'NaCl'],
+        outputs: ['AgCl', 'NaNO3'],
+        conditions: {temp: 25, catalyst: 'none'},
+        equation: 'AgNO₃ + NaCl → AgCl↓ + NaNO₃',
+        energy: 'neither',
+        description: 'تشکیل رسوب سفید نقره کلرید'
+    },
+    {
+        id: 'sodium_water',
+        name: 'واکنش سدیم با آب',
+        inputs: ['Na', 'H2O'],
+        outputs: ['NaOH', 'H2'],
+        conditions: {temp: 25, catalyst: 'none'},
+        equation: '2Na + 2H₂O → 2NaOH + H₂↑',
+        energy: 'exothermic',
+        description: 'واکنش شدید سدیم با آب با تولید هیدروژن'
+    },
+    {
+        id: 'photosynthesis',
+        name: 'فتوسنتز',
+        inputs: ['CO2', 'H2O', 'light'],
+        outputs: ['C6H12O6', 'O2'],
+        conditions: {temp: 25, catalyst: 'chlorophyll'},
+        equation: '6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂',
+        energy: 'endergonic',
+        description: 'فرآیند فتوسنتز گیاهان'
+    },
+    {
+        id: 'fermentation',
+        name: 'تخمیر',
+        inputs: ['C6H12O6', 'yeast'],
+        outputs: ['C2H5OH', 'CO2'],
+        conditions: {temp: 37, catalyst: 'enzyme'},
+        equation: 'C₆H₁₂O₆ → 2C₂H₅OH + 2CO₂',
+        energy: 'exothermic',
+        description: 'تخمیر الکلی گلوکز'
+    },
+    {
+        id: 'electrolysis_water',
+        name: 'الکترولیز آب',
+        inputs: ['H2O', 'electricity'],
+        outputs: ['H2', 'O2'],
+        conditions: {temp: 25, catalyst: 'electrodes'},
+        equation: '2H₂O → 2H₂ + O₂',
+        energy: 'endergonic',
+        description: 'شکست آب به هیدروژن و اکسیژن'
+    },
+    {
+        id: 'rusting',
+        name: 'زنگ زدن آهن',
+        inputs: ['Fe', 'O2', 'H2O'],
+        outputs: ['Fe2O3'],
+        conditions: {temp: 25, catalyst: 'none'},
+        equation: '4Fe + 3O₂ + 6H₂O → 4Fe(OH)₃ → 2Fe₂O₃·nH₂O',
+        energy: 'exothermic',
+        description: 'فرآیند اکسیداسیون آهن'
+    },
+    {
+        id: 'ammonia_synthesis',
+        name: 'سنتز آمونیاک',
+        inputs: ['N2', 'H2'],
+        outputs: ['NH3'],
+        conditions: {temp: 450, pressure: 200, catalyst: 'Fe'},
+        equation: 'N₂ + 3H₂ ⇌ 2NH₃',
+        energy: 'exothermic',
+        description: 'فرآیند هابر-بوش'
+    },
+    {
+        id: 'ozone_decomposition',
+        name: 'تجزیه ازن',
+        inputs: ['O3'],
+        outputs: ['O2'],
+        conditions: {temp: 25, catalyst: 'Cl'},
+        equation: '2O₃ → 3O₂',
+        energy: 'exothermic',
+        description: 'تجزیه ازن به اکسیژن'
+    }
+];
+
+// ==================== GAME STATE ====================
+let gameState = {
+    inventory: [],
+    workspace: [],
+    conditions: {
+        temperature: 25,
+        pressure: 1,
+        ph: 7
+    },
+    selectedItem: null,
+    reactions: []
+};
+
+// ==================== INITIALIZATION ====================
+function init() {
+    renderInventory();
+    setupEventListeners();
+    animateParticles();
+}
+
+// ==================== INVENTORY RENDERING ====================
+function renderInventory() {
+    const grid = document.getElementById('itemsGrid');
+    grid.innerHTML = '';
+    
+    const allItems = [
+        ...chemicalsDB.elements,
+        ...chemicalsDB.compounds,
+        ...chemicalsDB.bio,
+        ...chemicalsDB.equipment
+    ];
+    
+    allItems.forEach(item => {
+        const card = createItemCard(item);
+        grid.appendChild(card);
+    });
+}
+
+function createItemCard(item) {
+    const div = document.createElement('div');
+    div.className = 'item-card';
+    div.draggable = true;
+    div.dataset.id = item.id;
+    div.dataset.type = item.type;
+    
+    const icon = item.icon || getIconForItem(item);
+    
+    div.innerHTML = `
+        <div class="item-icon">${icon}</div>
+        <div class="item-name">${item.name}</div>
+        <div class="item-formula">${item.formula || ''}</div>
+        <div class="item-props">
+            <span class="prop-badge">${item.state || item.type}</span>
+            <span class="prop-badge">${item.mass || ''}g</span>
+        </div>
+    `;
+    
+    div.addEventListener('dragstart', handleDragStart);
+    div.addEventListener('dragend', handleDragEnd);
+    
+    return div;
+}
+
+function getIconForItem(item) {
+    const icons = {
+        element: '⚛️',
+        compound: '🧪',
+        bio: '🧬',
+        equipment: '🔬'
+    };
+    return icons[item.type] || '⚗️';
+}
+
+// ==================== DRAG & DROP ====================
+function handleDragStart(e) {
+    e.target.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', e.target.dataset.id);
+}
+
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+function allowDrop(e) {
+    e.preventDefault();
+}
+
+function drop(e) {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    const item = findItemById(id);
+    
+    if (item) {
+        addToWorkspace(item, e.clientX, e.clientY);
+    }
+}
+
+function findItemById(id) {
+    const allItems = [
+        ...chemicalsDB.elements,
+        ...chemicalsDB.compounds,
+        ...chemicalsDB.bio,
+        ...chemicalsDB.equipment
+    ];
+    return allItems.find(i => i.id === id);
+}
+
+// ==================== WORKSPACE MANAGEMENT ====================
+function addToWorkspace(item, x, y) {
+    const workspace = document.getElementById('workspace');
+    const el = document.createElement('div');
+    el.className = 'dropped-item equipment-container';
+    el.style.left = (x - workspace.offsetLeft) + 'px';
+    el.style.top = (y - workspace.offsetTop) + 'px';
+    el.dataset.itemId = item.id;
+    
+    const icon = item.icon || getIconForItem(item);
+    
+    el.innerHTML = `
+        <div class="equipment-icon">${icon}</div>
+        <div class="equipment-label">${item.name}</div>
+        <div class="contents"></div>
+    `;
+    
+    el.addEventListener('click', () => selectItem(el, item));
+    el.addEventListener('contextmenu', showContextMenu);
+    
+    workspace.appendChild(el);
+    gameState.workspace.push({element: el, data: item});
+    
+    showNotification(`${item.name} اضافه شد`);
+}
+
+function selectItem(el, item) {
+    document.querySelectorAll('.dropped-item').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+    gameState.selectedItem = {element: el, data: item};
+    updateProperties(item);
+}
+
+function updateProperties(item) {
+    document.getElementById('selectedItemName').textContent = item.name;
+    document.getElementById('selectedMass').textContent = item.mass ? item.mass + ' g/mol' : '-';
+    document.getElementById('selectedTemp').textContent = gameState.conditions.temperature + '°C';
+    document.getElementById('selectedState').textContent = item.state || 'نامشخص';
+}
+
+// ==================== CONDITIONS CONTROL ====================
+function updateCondition(type, value) {
+    gameState.conditions[type] = parseFloat(value);
+    document.getElementById(type + 'Value').textContent = value;
+    
+    if (type === 'temp') {
+        document.getElementById('tempValue').textContent = value + '°C';
+    } else if (type === 'pressure') {
+        document.getElementById('pressureValue').textContent = value + ' atm';
+    } else if (type === 'ph') {
+        document.getElementById('phValue').textContent = value;
+    }
+}
+
+// ==================== REACTION SYSTEM ====================
+function checkReactions() {
+    const workspaceItems = gameState.workspace.map(w => w.data.id);
+    
+    reactionsDB.forEach(reaction => {
+        const hasAllInputs = reaction.inputs.every(input => 
+            workspaceItems.includes(input) || 
+            (input === 'light' && gameState.conditions.light) ||
+            (input === 'electricity' && gameState.conditions.electricity)
+        );
+        
+        if (hasAllInputs && checkConditions(reaction.conditions)) {
+            executeReaction(reaction);
+        }
+    });
+}
+
+function checkConditions(conditions) {
+    if (conditions.temp && Math.abs(gameState.conditions.temperature - conditions.temp) > 50) {
+        return false;
+    }
+    if (conditions.pressure && Math.abs(gameState.conditions.pressure - conditions.pressure) > 10) {
+        return false;
+    }
+    return true;
+}
+
+function executeReaction(reaction) {
+    // Check if already executed
+    if (gameState.reactions.find(r => r.id === reaction.id)) return;
+    
+    gameState.reactions.push(reaction);
+    
+    // Add outputs to workspace
+    reaction.outputs.forEach(outputId => {
+        const item = findItemById(outputId);
+        if (item) {
+            addToWorkspace(item, 
+                Math.random() * 400 + 100, 
+                Math.random() * 300 + 100
+            );
+        }
+    });
+    
+    // Log reaction
+    logReaction(reaction);
+    
+    // Visual effect
+    createExplosion();
+    
+    showNotification(`واکنش جدید: ${reaction.name}`);
+}
+
+function logReaction(reaction) {
+    const list = document.getElementById('reactionsList');
+    const div = document.createElement('div');
+    div.className = 'reaction-item';
+    div.innerHTML = `
+        <div class="reaction-equation">${reaction.equation}</div>
+        <div class="reaction-desc">${reaction.description}</div>
+    `;
+    list.insertBefore(div, list.firstChild);
+}
+
+// ==================== ACTIONS ====================
+function analyzeMixture() {
+    checkReactions();
+    showNotification('آنالیز کامل شد');
+}
+
+function heatMixture() {
+    gameState.conditions.temperature += 50;
+    document.getElementById('temperature').value = gameState.conditions.temperature;
+    updateCondition('temp', gameState.conditions.temperature);
+    checkReactions();
+    showNotification('دمای محیط افزایش یافت');
+}
+
+function coolMixture() {
+    gameState.conditions.temperature -= 50;
+    document.getElementById('temperature').value = gameState.conditions.temperature;
+    updateCondition('temp', gameState.conditions.temperature);
+    checkReactions();
+    showNotification('دمای محیط کاهش یافت');
+}
+
+function clearWorkspace() {
+    document.getElementById('workspace').innerHTML = '';
+    gameState.workspace = [];
+    gameState.reactions = [];
+    showNotification('میز کار پاک شد');
+}
+
+// ==================== CONTEXT MENU ====================
+function showContextMenu(e) {
+    e.preventDefault();
+    const menu = document.getElementById('contextMenu');
+    menu.style.display = 'block';
+    menu.style.left = e.pageX + 'px';
+    menu.style.top = e.pageY + 'px';
+}
+
+function contextAction(action) {
+    const menu = document.getElementById('contextMenu');
+    menu.style.display = 'none';
+    
+    if (!gameState.selectedItem) return;
+    
+    const actions = {
+        'measure': () => showNotification('در حال اندازه‌گیری...'),
+        'pour': () => showNotification('در حال ریختن...'),
+        'heat': () => heatMixture(),
+        'cool': () => coolMixture(),
+        'stir': () => showNotification('در حال هم زدن...'),
+        'filter': () => showNotification('در حال صاف کردن...'),
+        'electrolyze': () => { gameState.conditions.electricity = true; checkReactions(); },
+        'centrifuge': () => showNotification('در حال سانتریفیوژ...'),
+        'dispose': () => {
+            gameState.selectedItem.element.remove();
+            gameState.workspace = gameState.workspace.filter(w => w !== gameState.selectedItem);
+            showNotification('حذف شد');
+        }
+    };
+    
+    if (actions[action]) actions[action]();
+}
+
+// ==================== UI HELPERS ====================
+function showNotification(text) {
+    const notif = document.getElementById('notification');
+    notif.textContent = text;
+    notif.classList.add('show');
+    setTimeout(() => notif.classList.remove('show'), 3000);
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    // Filter items based on tab
+    renderInventory();
+}
+
+function filterCategory(category) {
+    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    // Filter items
+    renderInventory();
+}
+
+function searchItems() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.item-card');
+    
+    cards.forEach(card => {
+        const name = card.querySelector('.item-name').textContent.toLowerCase();
+        const formula = card.querySelector('.item-formula').textContent.toLowerCase();
+        
+        if (name.includes(query) || formula.includes(query)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function closeModal() {
+    document.getElementById('analysisModal').classList.remove('active');
+}
+
+function deselectAll(e) {
+    if (e.target.id === 'workspace' || e.target.id === 'labTable') {
+        document.querySelectorAll('.dropped-item').forEach(i => i.classList.remove('selected'));
+        gameState.selectedItem = null;
+    }
+}
+
+// ==================== VISUAL EFFECTS ====================
+function animateParticles() {
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    const particles = [];
+    
+    for (let i = 0; i < 50; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            size: Math.random() * 3 + 1
+        });
+    }
+    
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            
+            if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+            if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+            
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(99, 102, 241, 0.3)';
+            ctx.fill();
+        });
+        
+        requestAnimationFrame(animate);
+    }
+    
+    animate();
+}
+
+function createExplosion() {
+    // Create visual explosion effect
+    const workspace = document.getElementById('workspace');
+    const explosion = document.createElement('div');
+    explosion.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(circle, rgba(236, 72, 153, 0.8), transparent);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        animation: explode 0.5s ease-out forwards;
+        pointer-events: none;
+    `;
+    
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes explode {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    workspace.appendChild(explosion);
+    setTimeout(() => explosion.remove(), 500);
+}
+
+// ==================== EVENT LISTENERS ====================
+function setupEventListeners() {
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.context-menu')) {
+            document.getElementById('contextMenu').style.display = 'none';
+        }
+    });
+    
+    window.addEventListener('resize', () => {
+        const canvas = document.getElementById('particleCanvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+}
+
+// Start
+window.onload = init;
+</body>
+</html>
+
